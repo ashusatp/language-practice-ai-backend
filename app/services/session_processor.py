@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import logging
 import uuid
 from typing import Any, Optional
@@ -82,4 +83,42 @@ class SessionProcessorService:
         session_id: uuid.UUID,
         transcript_messages: list[dict[str, Any]],
     ) -> Job:
-        pass
+
+        async with AsyncSessionLocal() as db:
+            stmt = select(Session).where(Session.id == session_id)
+            res = await db.execute(stmt)
+            session = res.scalar_one_or_none()
+
+            if not session:
+                logger.error("Cannot finish session: Session %s not found", session_id)
+                raise ValueError(f"Session {session_id} not found")
+            
+            session.status = "completed"
+            session.ended_at = datetime.now(timezone.utc)
+            session.transcript = transcript_messages
+
+             # Enqueue the summary generation job (picked up by JobWorker)
+            job = Job(
+                session_id=session.id,
+                type="generate_summary",
+                status="pending",
+                attempts=0,
+                max_attempts=3,
+                payload={
+                    "session_id": str(session.id),
+                    "transcript": transcript_messages,
+                },
+                run_after=datetime.now(timezone.utc),
+            )
+
+            db.add(job)
+            await db.commit()
+            await db.refresh(job)
+
+            logger.info(
+                "Session %s completed. Created Job %s in queue for worker processing.",
+                session_id,
+                job.id,
+            )
+        
+        return job
