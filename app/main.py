@@ -22,15 +22,15 @@ async def lifespan(app: FastAPI):
     """FastAPI lifespan managing startup and shutdown tasks."""
     logger.info("Initializing FastAPI application (%s)...", config.environment)
 
-    # If configured, run LiveKit agent worker in background thread
-    if config.run_agent_worker_with_api:
-        logger.info("Auto-start agent worker enabled. Launching worker thread...")
-        agent_worker_manager.start()
-    else:
-        logger.info(
-            "Agent worker auto-start disabled (RUN_AGENT_WORKER_WITH_API=false). "
-            "Running in standalone API mode."
-        )
+    # # If configured, run LiveKit agent worker in background thread
+    # if config.run_agent_worker_with_api:
+    #     logger.info("Auto-start agent worker enabled. Launching worker thread...")
+    #     agent_worker_manager.start()
+    # else:
+    #     logger.info(
+    #         "Agent worker auto-start disabled (RUN_AGENT_WORKER_WITH_API=false). "
+    #         "Running in standalone API mode."
+    #     )
 
     # If configured, run PostgreSQL queue worker for summaries/background jobs
     if config.run_job_worker_with_api:
@@ -42,8 +42,8 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down FastAPI application...")
     if config.run_job_worker_with_api:
         await job_worker.stop()
-    if config.run_agent_worker_with_api:
-        agent_worker_manager.stop()
+    # if config.run_agent_worker_with_api:
+    #     agent_worker_manager.stop()
     logger.info("Application shutdown complete.")
 
 
@@ -54,6 +54,7 @@ def create_app() -> FastAPI:
         title="Call Engine API Portal",
         version="0.1.0",
         description="FastAPI Backend & Agent Management Portal",
+        lifespan=lifespan,
         debug=config.debug,
     )
 
