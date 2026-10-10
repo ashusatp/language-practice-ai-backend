@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -226,7 +226,14 @@ class SessionRepository:
 
         stmt = (
             select(Session.started_at)
-            .where(Session.started_by == target_id, Session.status == "completed")
+            .where(
+                Session.started_by == target_id,
+                Session.status == "completed",
+                or_(
+                    Session.ended_at != Session.started_at,
+                    Session.ended_at.is_(None),
+                ),
+            )
             .order_by(Session.started_at.asc())
         )
         res = await self.db.execute(stmt)

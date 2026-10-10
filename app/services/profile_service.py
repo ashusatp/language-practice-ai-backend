@@ -1,6 +1,12 @@
 from datetime import date, datetime, timedelta, timezone
 import logging
-from typing import Set
+from typing import Any, Set
+
+try:
+    from zoneinfo import ZoneInfo
+    IST = ZoneInfo("Asia/Kolkata")
+except Exception:
+    IST = timezone(timedelta(hours=5, minutes=30))
 
 from app.models.user import User
 from app.repositories.profile_repository import ProfileRepository
@@ -27,16 +33,28 @@ class ProfileService:
         return await self.profile_repository.get_user_profile(user)
 
     async def get_user_streak_stats(self, user: User) -> StreakResponse:
-        """Calculate and return practice streak stats with monthly streak freeze protection."""
-        today = datetime.now(timezone.utc).date()
+        """Calculate and return practice streak stats with monthly streak freeze protection in IST."""
+        today = datetime.now(IST).date()
         yesterday = today - timedelta(days=1)
 
-        # 1. Fetch all completed session start timestamps
+        def _to_ist_date(ts: Any) -> date | None:
+            if not ts:
+                return None
+            if isinstance(ts, datetime):
+                # Ensure timestamp is treated as UTC if naive, then convert to IST
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                return ts.astimezone(IST).date()
+            if isinstance(ts, date):
+                return ts
+            return None
+
+        # 1. Fetch all completed session start timestamps and convert to IST dates
         session_timestamps = await self.session_repository.get_completed_sessions(user.id)
         active_dates: Set[date] = {
-            ts.date() if isinstance(ts, datetime) else ts
+            d
             for ts in session_timestamps
-            if ts
+            if (d := _to_ist_date(ts)) is not None
         }
 
         # 2. Fetch all applied streak freeze dates from database
