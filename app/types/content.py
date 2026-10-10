@@ -65,33 +65,3 @@ class SessionVoiceSummary(BaseModel):
     name: str
     gender: str
 
-
-class SessionHistoryItemResponse(BaseModel):
-    """Past session item for history list."""
-
-    id: uuid.UUID
-    room_id: str
-    started_at: datetime
-    ended_at: Optional[datetime] = None
-    duration_seconds: int = 0
-    language: Optional[SessionLanguageSummary] = None
-    voice: Optional[SessionVoiceSummary] = None
-    topic: Optional[str] = None
-    overall_rating: Optional[float] = None
-    user_rating: Optional[int] = None
-    scores: Optional[dict[str, float]] = None
-    summary: Optional[str] = None
-    sentiment: Optional[str] = None
-    mistakes_count: int = 0
-    key_points: Optional[list[str]] = None
-    action_items: Optional[list[str]] = None
-    mistakes: Optional[list[dict[str, Any]]] = None
-    key_vocabulary: Optional[list[str]] = None
-    transcript: Optional[list[dict[str, Any]]] = None
-
-
-class SessionHistoryListResponse(BaseModel):
-    """Paginated list of user past practice sessions."""
-
-    total: int
-    items: list[SessionHistoryItemResponse]

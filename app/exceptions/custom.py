@@ -25,3 +25,8 @@ class InactiveUserException(AppException):
 class UserNotFoundException(AppException):
     def __init__(self, message: str = "User not found") -> None:
         super().__init__(message=message, status_code=404)
+
+
+class SessionNotFoundException(AppException):
+    def __init__(self, message: str = "Session not found") -> None:
+        super().__init__(message=message, status_code=404)
