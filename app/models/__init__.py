@@ -8,6 +8,7 @@ from app.models.session import Session
 from app.models.user import User
 from app.models.voice import Voice
 from app.models.streak_freeze import UserStreakFreeze
+from app.models.subscription import UserDailyUsage, UserSubscription
 
 __all__ = [
     "Base",
@@ -20,4 +21,6 @@ __all__ = [
     "SessionFeedback",
     "Job",
     "UserStreakFreeze",
+    "UserSubscription",
+    "UserDailyUsage",
 ]
