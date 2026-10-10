@@ -54,7 +54,6 @@ def create_app() -> FastAPI:
         title="Call Engine API Portal",
         version="0.1.0",
         description="FastAPI Backend & Agent Management Portal",
-        lifespan=lifespan,
         debug=config.debug,
     )
 
