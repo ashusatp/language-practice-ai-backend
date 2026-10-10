@@ -184,16 +184,20 @@ class JobWorker:
             s_res = await session.execute(s_stmt)
             s_rec = s_res.scalar_one_or_none()
             if s_rec and s_rec.started_by:
-                duration_mins = 1
+                duration_mins = 0
                 if s_rec.started_at and s_rec.ended_at:
-                    duration_mins = max(1, int((s_rec.ended_at - s_rec.started_at).total_seconds() / 60))
-                await SessionProcessorService.update_user_language_proficiency(
-                    db=session,
-                    user_id=s_rec.started_by,
-                    scores=summary_data.get("scores", {}),
-                    language_id=s_rec.language_id,
-                    duration_mins=duration_mins,
-                )
+                    diff_seconds = (s_rec.ended_at - s_rec.started_at).total_seconds()
+                    if diff_seconds > 0:
+                        duration_mins = max(1, int(diff_seconds / 60))
+
+                if duration_mins > 0:
+                    await SessionProcessorService.update_user_language_proficiency(
+                        db=session,
+                        user_id=s_rec.started_by,
+                        scores=summary_data.get("scores", {}),
+                        language_id=s_rec.language_id,
+                        duration_mins=duration_mins,
+                    )
 
             await session.commit()
 

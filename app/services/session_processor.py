@@ -87,7 +87,8 @@ class SessionProcessorService:
     async def finish_session_and_enqueue_summary(
         session_id: uuid.UUID,
         transcript_messages: list[dict[str, Any]],
-    ) -> Job:
+        status: str = "completed",
+    ) -> Optional[Job]:
 
         async with AsyncSessionLocal() as db:
             stmt = select(Session).where(Session.id == session_id)
@@ -96,35 +97,68 @@ class SessionProcessorService:
 
             if not session:
                 logger.error("Cannot finish session: Session %s not found", session_id)
-                raise ValueError(f"Session {session_id} not found")
+                return None
             
-            session.status = "completed"
-            session.ended_at = datetime.now(timezone.utc)
             session.transcript = transcript_messages
 
-             # Enqueue the summary generation job (picked up by JobWorker)
-            job = Job(
-                session_id=session.id,
-                type="generate_summary",
-                status="pending",
-                attempts=0,
-                max_attempts=3,
-                payload={
-                    "session_id": str(session.id),
-                    "transcript": transcript_messages,
-                },
-                run_after=datetime.now(timezone.utc),
-            )
+            # Check number of real speaking turns by the user
+            user_turns = [
+                turn for turn in (transcript_messages or [])
+                if turn.get("role") in ("user", "human") and str(turn.get("text", "")).strip()
+            ]
+            user_turn_count = len(user_turns)
 
-            db.add(job)
+            # If 0 user turns (user disconnected without speaking):
+            # Mark session as completed, keep session & transcript, do not create feedback entries, and do not add timing
+            if user_turn_count == 0:
+                session.status = "completed"
+                # Do NOT add timing: pin ended_at to started_at so duration is 0
+                session.ended_at = session.started_at or datetime.now(timezone.utc)
+                await db.commit()
+                logger.info(
+                    "Session %s has 0 user turns. Marked as 'completed' without creating feedback entries or timing.",
+                    session_id,
+                )
+                return None
+
+            # If session was marked failed or user spoke
+            session.status = status
+            session.ended_at = datetime.now(timezone.utc)
+
+            # Only enqueue summary generation if completed normally
+            job = None
+            if status == "completed":
+                job = Job(
+                    session_id=session.id,
+                    type="generate_summary",
+                    status="pending",
+                    attempts=0,
+                    max_attempts=3,
+                    payload={
+                        "session_id": str(session.id),
+                        "transcript": transcript_messages,
+                    },
+                    run_after=datetime.now(timezone.utc),
+                )
+                db.add(job)
+
             await db.commit()
-            await db.refresh(job)
-
-            logger.info(
-                "Session %s completed. Created Job %s in queue for worker processing.",
-                session_id,
-                job.id,
-            )
+            if job:
+                await db.refresh(job)
+                logger.info(
+                    "Session %s (%s, %d user turns). Enqueued summary job %s for processing.",
+                    session_id,
+                    status,
+                    user_turn_count,
+                    job.id,
+                )
+            else:
+                logger.info(
+                    "Session %s marked as %s with %d user turns without summary job.",
+                    session_id,
+                    status,
+                    user_turn_count,
+                )
         
         return job
 
@@ -330,8 +364,9 @@ class SessionProcessorService:
             2,
         )
 
-        proficiency.total_sessions += 1
-        proficiency.total_minutes += max(1, duration_mins)
+        if duration_mins > 0:
+            proficiency.total_sessions += 1
+            proficiency.total_minutes += duration_mins
 
         logger.info(
             "Updated UserLanguageProficiency for user %s (language_id=%s): overall=%.2f (fluency=%.2f, grammar=%.2f, pronunciation=%.2f, vocabulary=%.2f, sessions=%d)",

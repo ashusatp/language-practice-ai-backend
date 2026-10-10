@@ -167,16 +167,23 @@ class SessionRepository:
         fb_res = await self.db.execute(fb_stmt)
         feedback = fb_res.scalar_one_or_none()
 
+        # Session is ready if feedback summary exists, or if the session is completed without background jobs (e.g. 0-turn session)
         is_ready = (
-            feedback is not None
-            and feedback.summary is not None
+            (feedback is not None and feedback.summary is not None)
+            or (session.status == "completed" and latest_job is None)
+        )
+
+        job_status = (
+            "completed"
+            if is_ready
+            else (latest_job.status if latest_job else ("completed" if session.status == "completed" else "pending"))
         )
 
         return SessionStatusResponse(
             session_id=session.id,
             room_id=session.room_id,
             session_status=session.status,
-            job_status="completed" if is_ready else (latest_job.status if latest_job else "pending"),
+            job_status=job_status,
             is_ready=is_ready,
             error_message=latest_job.error_message if latest_job else None,
         )
