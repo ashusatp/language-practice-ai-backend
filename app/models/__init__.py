@@ -7,6 +7,7 @@ from app.models.profile import UserLanguageProficiency
 from app.models.session import Session
 from app.models.user import User
 from app.models.voice import Voice
+from app.models.streak_freeze import UserStreakFreeze
 
 __all__ = [
     "Base",
@@ -18,4 +19,5 @@ __all__ = [
     "Session",
     "SessionFeedback",
     "Job",
+    "UserStreakFreeze",
 ]

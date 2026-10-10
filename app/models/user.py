@@ -6,6 +6,7 @@ from app.models.base import BaseModel
 if TYPE_CHECKING:
     from app.models.profile import UserLanguageProficiency
     from app.models.session import Session
+    from app.models.streak_freeze import UserStreakFreeze
 
 
 class User(BaseModel):
@@ -45,6 +46,11 @@ class User(BaseModel):
     )
     sessions: Mapped[list["Session"]] = relationship(
         "Session",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    streak_freezes: Mapped[list["UserStreakFreeze"]] = relationship(
+        "UserStreakFreeze",
         back_populates="user",
         cascade="all, delete-orphan",
     )

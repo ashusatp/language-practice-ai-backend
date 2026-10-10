@@ -1,11 +1,12 @@
-import uuid
+from datetime import date
 from typing import Optional
+import uuid
 
-from sqlalchemy import select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import User, UserLanguageProficiency
+from app.models import User, UserLanguageProficiency, UserStreakFreeze
 from app.types.profile import LanguageProficiencyResponse, UserProfileResponse
 
 
@@ -60,3 +61,36 @@ class ProfileRepository:
 
     # Alias so both method names work seamlessly
     get_user_profile_stats = get_user_profile
+
+    async def get_user_streak_freezes(self, user_id: uuid.UUID) -> list[date]:
+        """Fetch all dates on which a streak freeze was applied for the user."""
+        stmt = (
+            select(UserStreakFreeze.freeze_date)
+            .where(UserStreakFreeze.user_id == user_id)
+            .order_by(UserStreakFreeze.freeze_date.asc())
+        )
+        res = await self.db.execute(stmt)
+        return list(res.scalars().all())
+
+    async def get_monthly_used_freezes(
+        self, user_id: uuid.UUID, year: int, month: int
+    ) -> int:
+        """Count how many streak freezes the user has used in a given month and year."""
+        stmt = select(func.count(UserStreakFreeze.id)).where(
+            UserStreakFreeze.user_id == user_id,
+            extract("year", UserStreakFreeze.freeze_date) == year,
+            extract("month", UserStreakFreeze.freeze_date) == month,
+        )
+        res = await self.db.execute(stmt)
+        return res.scalar() or 0
+
+    async def apply_streak_freeze(self, user_id: uuid.UUID, freeze_date: date) -> bool:
+        """Record an applied streak freeze for a specific date."""
+        freeze = UserStreakFreeze(user_id=user_id, freeze_date=freeze_date)
+        self.db.add(freeze)
+        try:
+            await self.db.commit()
+            return True
+        except Exception:
+            await self.db.rollback()
+            return False
