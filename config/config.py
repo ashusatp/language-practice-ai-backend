@@ -39,6 +39,7 @@ class Config:
     environment: str = os.getenv("ENVIRONMENT", "development")
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     debug: bool = os.getenv("DEBUG", "true").lower() in ("true", "1", "yes")
+    client_endpoint = os.getenv("CLIENT_ENDPOINT" , "http://localhost:5173")
 
     # API Server settings
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
