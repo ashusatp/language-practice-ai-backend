@@ -5,7 +5,9 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
+    "startCommand": "uv run python server.py start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
+
 }
