@@ -60,6 +60,18 @@ class Config:
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
     )
 
+    # Email / SMTP settings
+    mail_username: str = os.getenv("MAIL_USERNAME", "").strip("\"', ")
+    mail_password: str = os.getenv("MAIL_PASSWORD", "").strip("\"', ")
+    mail_from: str = os.getenv("MAIL_FROM", "").strip("\"', ")
+    mail_port: int = int(os.getenv("MAIL_PORT", "465").split("#")[0].strip("\"', ") or 465)
+    mail_server: str = os.getenv("MAIL_SERVER", "").strip("\"', ")
+    mail_starttls: bool = os.getenv("MAIL_STARTTLS", "false").split("#")[0].strip("\"', ").lower() in ("true", "1", "yes")
+    mail_ssl_tls: bool = os.getenv("MAIL_SSL_TLS", "true").split("#")[0].strip("\"', ").lower() in ("true", "1", "yes")
+    use_credentials: bool = os.getenv("USE_CREDENTIALS", "true").split("#")[0].strip("\"', ").lower() in ("true", "1", "yes")
+    validate_certs: bool = os.getenv("VALIDATE_CERTS", "true").split("#")[0].strip("\"', ").lower() in ("true", "1", "yes")
+
+
     # Database URL properties
     @property
     def database_url(self) -> str:
