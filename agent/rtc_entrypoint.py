@@ -35,6 +35,7 @@ logger = logging.getLogger("agent.rtc_entrypoint")
 
 
 async def rtc_entrypoint(ctx: agents.JobContext):
+
     # 1. Connect to the room first
     await ctx.connect()
 
@@ -58,6 +59,22 @@ async def rtc_entrypoint(ctx: agents.JobContext):
     user_access_token = metadata.get("access_token")
     if not user_access_token:
         logger.error("No access token provided in metadata")
+        logger.error("No access token provided in metadata")
+        
+        # 1. Send error message to the UI
+        error_msg = json.dumps({
+            "type": "agent_error",
+            "code": "AUTH_REQUIRED",
+            "message": "Authentication required: Please log in to start a practice session."
+        })
+        await ctx.room.local_participant.publish_data(
+            payload=error_msg.encode("utf-8"),
+            reliable=True,
+        )
+        
+        # 2. Wait a brief moment to ensure the packet sends, then exit/disconnect
+        await asyncio.sleep(0.5)
+        await ctx.room.disconnect()
         return
 
     # Decode access token
