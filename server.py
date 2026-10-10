@@ -38,9 +38,10 @@ def create_agent_server() -> AgentServer:
 
     server.rtc_session(
         rtc_entrypoint,
-        agent_name="ashu-testing-agent",
+        agent_name=config.agent_name or "ashu-testing-agent",
         on_request=handle_request,
     )
+
 
     return server
 
