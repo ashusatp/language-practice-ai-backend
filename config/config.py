@@ -43,7 +43,8 @@ class Config:
 
     # API Server settings
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
-    api_port: int = int(os.getenv("API_PORT", "8000"))
+    api_port: int = int(os.getenv("PORT", os.getenv("API_PORT", "8000")))
+
     run_agent_worker_with_api: bool = os.getenv(
         "RUN_AGENT_WORKER_WITH_API", "true"
     ).lower() in ("true", "1", "yes")

@@ -1,0 +1,62 @@
+services:
+  - type: web
+    name: khoo-ai-backend
+    runtime: python
+    region: singapore
+    plan: starter
+    branch: main
+    buildCommand: "pip install uv && uv sync --frozen && uv run alembic upgrade head"
+    startCommand: "uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: AGENT_NAME
+        value: call-engine
+      - key: RUN_AGENT_WORKER_WITH_API
+        value: "true"
+      - key: RUN_JOB_WORKER_WITH_API
+        value: "true"
+      - key: MAIL_SERVER
+        value: smtpout.secureserver.net
+      - key: MAIL_PORT
+        value: "465"
+      - key: MAIL_SSL_TLS
+        value: "true"
+      - key: MAIL_STARTTLS
+        value: "false"
+      - key: USE_CREDENTIALS
+        value: "true"
+      - key: VALIDATE_CERTS
+        value: "true"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: DATABASE_URL
+        sync: false
+      - key: CLIENT_ENDPOINT
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
