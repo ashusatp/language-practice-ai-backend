@@ -1,9 +1,11 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from app.dependencies.auth_dependencies import get_current_user
+from app.dependencies.subscription_dependencies import get_subscription_service
 from app.models.user import User
-from app.types.livekit import LiveKitTokenRequest, LiveKitTokenResponse
 from app.services.livekit_token import LiveKitTokenService
+from app.services.subscription_service import SubscriptionService
+from app.types.livekit import LiveKitTokenRequest, LiveKitTokenResponse
 
 router = APIRouter(prefix="/livekit", tags=["LiveKit Authentication"])
 
@@ -18,7 +20,7 @@ def get_livekit_token_service() -> LiveKitTokenService:
     summary="Generate LiveKit participant token (Standard Endpoint)",
     description=(
         "Adheres to LiveKit's standardized endpoint token generation specification. "
-        "Returns server_url and participant_token. Supports optional Bearer auth."
+        "Validates email verification and subscription credit quota before granting access."
     ),
 )
 async def generate_token_post(
@@ -34,6 +36,7 @@ async def generate_token_post(
     language: Optional[str] = Query(default=None, description="Language code or name"),
     current_user: Optional[User] = Depends(get_current_user),
     token_service: LiveKitTokenService = Depends(get_livekit_token_service),
+    subscription_service: SubscriptionService = Depends(get_subscription_service),
 ) -> LiveKitTokenResponse:
     """Standard POST endpoint used by LiveKit frontend TokenSource."""
     req = body or LiveKitTokenRequest()
@@ -48,7 +51,11 @@ async def generate_token_post(
     if not req.language and language:
         req.language = language
 
-    return await token_service.generate_token(req, user=current_user)
+    credit_status = None
+    if current_user:
+        credit_status = await subscription_service.check_can_start_session(current_user)
+
+    return await token_service.generate_token(req, user=current_user, credit_status=credit_status)
 
 
 @router.get(
@@ -68,6 +75,7 @@ async def generate_token_get(
     name: Optional[str] = Query(default=None, description="Participant display name"),
     current_user: Optional[User] = Depends(get_current_user),
     token_service: LiveKitTokenService = Depends(get_livekit_token_service),
+    subscription_service: SubscriptionService = Depends(get_subscription_service),
 ) -> LiveKitTokenResponse:
     """Convenience GET endpoint for React frontend fetchers."""
     req = LiveKitTokenRequest(
@@ -75,4 +83,9 @@ async def generate_token_get(
         participant_identity=identity or participant_identity,
         participant_name=name,
     )
-    return await token_service.generate_token(req, user=current_user)
+    credit_status = None
+    if current_user:
+        credit_status = await subscription_service.check_can_start_session(current_user)
+
+    return await token_service.generate_token(req, user=current_user, credit_status=credit_status)
+

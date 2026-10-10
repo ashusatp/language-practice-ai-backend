@@ -16,3 +16,18 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(..., min_length=1, description="Verification token sent to user's email")
+
+
+class SendVerificationResponse(BaseModel):
+    message: str
+    sent_to: str
+    preview_token: str | None = None
+
+
+class VerificationStatusResponse(BaseModel):
+    is_email_verified: bool
+    email: EmailStr

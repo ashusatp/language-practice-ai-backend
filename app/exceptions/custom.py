@@ -1,10 +1,11 @@
 class AppException(Exception):
     """Base exception for application errors."""
 
-    def __init__(self, message: str, status_code: int = 400) -> None:
+    def __init__(self, message: str, status_code: int = 400, code: str | None = None) -> None:
         super().__init__(message)
         self.message = message
         self.status_code = status_code
+        self.code = code
 
 
 class UserAlreadyExistsException(AppException):
@@ -30,3 +31,14 @@ class UserNotFoundException(AppException):
 class SessionNotFoundException(AppException):
     def __init__(self, message: str = "Session not found") -> None:
         super().__init__(message=message, status_code=404)
+
+
+class EmailNotVerifiedException(AppException):
+    def __init__(self, message: str = "Please verify your email address to access voice practice.") -> None:
+        super().__init__(message=message, status_code=403, code="EMAIL_NOT_VERIFIED")
+
+
+class CreditsExhaustedException(AppException):
+    def __init__(self, message: str = "Your practice minutes limit has been reached. Please upgrade your plan.") -> None:
+        super().__init__(message=message, status_code=403, code="CREDITS_EXHAUSTED")
+

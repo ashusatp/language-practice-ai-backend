@@ -4,8 +4,9 @@ import logging
 from config import config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.apis import auth, content, livekit, profile, session, user
+from app.apis import auth, content, livekit, profile, session, subscription, user
 from contextlib import asynccontextmanager
+
 
 
 # Configure centralized root logger
@@ -77,6 +78,8 @@ def create_app() -> FastAPI:
     app.include_router(session.router)
     app.include_router(content.router)
     app.include_router(profile.router)
+    app.include_router(subscription.router)
+
 
     # Convenience root health check
     @app.get("/health", tags=["Health"])
