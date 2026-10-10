@@ -207,4 +207,20 @@ class SessionRepository:
         await self.db.commit()
         await self.db.refresh(feedback)
         return feedback
-            
+    
+    async def get_completed_sessions(self, user_id: Any) -> list:
+        """Fetch all completed sessions for a user."""
+        target_id = getattr(user_id, "id", user_id)
+        if isinstance(target_id, str):
+            try:
+                target_id = uuid.UUID(target_id)
+            except ValueError:
+                pass
+
+        stmt = (
+            select(Session.started_at)
+            .where(Session.started_by == target_id, Session.status == "completed")
+            .order_by(Session.started_at.asc())
+        )
+        res = await self.db.execute(stmt)
+        return list(res.scalars().all())

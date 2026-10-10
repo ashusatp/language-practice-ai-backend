@@ -1,3 +1,5 @@
+from app.dependencies.session_dependencies import get_session_repository
+from app.repositories.session_repository import SessionRepository
 from app.repositories.profile_repository import ProfileRepository
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,5 +16,9 @@ def get_profile_repository(
 
 def get_profile_service(
     profile_repository: ProfileRepository = Depends(get_profile_repository),
+    session_repository: SessionRepository = Depends(get_session_repository),
 ) -> ProfileService:
-    return ProfileService(profile_repository=profile_repository)
+    return ProfileService(
+        profile_repository=profile_repository,
+        session_repository=session_repository,
+    )

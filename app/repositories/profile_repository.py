@@ -57,3 +57,6 @@ class ProfileRepository:
             total_minutes=total_minutes,
             languages=language_items,
         )
+
+    # Alias so both method names work seamlessly
+    get_user_profile_stats = get_user_profile
