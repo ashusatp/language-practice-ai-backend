@@ -133,8 +133,12 @@ class AuthService:
         )
 
 
-    async def verify_email(self, token: str) -> User:
-        """Validates the verification token and activates user's verified status."""
+    async def verify_email(
+        self,
+        token: str,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ) -> User:
+        """Validates the verification token, activates user's verified status, and sends confirmation email."""
         user = await self.user_repository.get_user_by_verification_token(token)
         if not user:
             raise AppException("Invalid or expired verification token.", status_code=400)
@@ -149,7 +153,21 @@ class AuthService:
         await self.user_repository.update_user(user)
 
         logger.info("User %s successfully verified email.", user.email)
+
+        # Trigger confirmation email in background to confirm email is verified
+        try:
+            from app.utils.smtp import send_verification_success_email
+            await send_verification_success_email(
+                to_email=user.email,
+                user_name=user.name or "",
+                background_tasks=background_tasks,
+            )
+            logger.info("Verification success email dispatched in background for %s", user.email)
+        except Exception as e:
+            logger.warning("Could not dispatch verification confirmation email to %s: %s", user.email, e)
+
         return user
+
 
     
     async def login(self, email: str, password: str) -> TokenResponse:

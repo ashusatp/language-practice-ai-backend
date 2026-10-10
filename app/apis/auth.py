@@ -85,12 +85,13 @@ async def send_verification(
     summary="Verify user email address via direct link click (GET)",
 )
 async def verify_email_get(
+    background_tasks: BackgroundTasks,
     token: str = Query(..., description="Verification token from email link"),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Handles direct browser clicks from email. Validates token, activates user, and redirects to frontend."""
     try:
-        user = await auth_service.verify_email(token)
+        user = await auth_service.verify_email(token, background_tasks=background_tasks)
         return RedirectResponse(
             url=f"{config.client_endpoint}/?email_verified=true&email={user.email}",
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
@@ -109,14 +110,16 @@ async def verify_email_get(
 )
 async def verify_email(
     request: VerifyEmailRequest,
+    background_tasks: BackgroundTasks,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> VerificationStatusResponse:
     """Verifies user's email using the token provided in the verification link."""
-    user = await auth_service.verify_email(request.token)
+    user = await auth_service.verify_email(request.token, background_tasks=background_tasks)
     return VerificationStatusResponse(
         is_email_verified=True,
         email=user.email,
     )
+
 
 
 

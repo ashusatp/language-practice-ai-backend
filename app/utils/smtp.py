@@ -146,3 +146,77 @@ async def send_verification_email_to_user(
         import asyncio
         asyncio.create_task(send_email(email_schema))
         logger.info("Verification email delivery scheduled via asyncio background task for %s", to_email)
+
+
+async def send_verification_success_email(
+    to_email: str,
+    user_name: str = "",
+    background_tasks: BackgroundTasks | None = None,
+) -> None:
+    """Sends a confirmation email after successful email verification."""
+    practice_url = f"{config.client_endpoint}"
+    display_name = user_name.strip() if user_name else "Learner"
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Email Verified – Khoo AI</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 16px;">
+            <tr>
+                <td align="center">
+                    <table width="100%" max-width="560px" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #1e293b; border-radius: 16px; border: 1px solid #334155; overflow: hidden; padding: 36px 32px; color: #f8fafc;">
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; margin-bottom: 24px;">
+                                    <h1 style="color: #6366f1; font-size: 24px; margin: 0; font-weight: 800; letter-spacing: -0.5px;">Khoo AI</h1>
+                                </div>
+                                <div style="display: inline-block; padding: 6px 12px; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 9999px; color: #34d399; font-size: 13px; font-weight: 600; margin-bottom: 16px;">
+                                    ✓ Email Verified
+                                </div>
+                                <h2 style="color: #f1f5f9; font-size: 20px; margin-top: 0; margin-bottom: 12px; font-weight: 600;">
+                                    You're all set, {display_name}! 🎉
+                                </h2>
+                                <p style="color: #94a3b8; font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+                                    Your email address (<strong style="color: #f8fafc;">{to_email}</strong>) has been confirmed.
+                                </p>
+                                <p style="color: #94a3b8; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+                                    Your free practice credits are unlocked. Jump into interactive, real-time voice sessions and start practicing languages today.
+                                </p>
+                                <div style="text-align: center; margin: 32px 0;">
+                                    <a href="{practice_url}" style="background-color: #6366f1; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-size: 15px; font-weight: 600; display: inline-block; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);">
+                                        Start Practicing Now →
+                                    </a>
+                                </div>
+                                <div style="border-top: 1px solid #334155; padding-top: 20px; margin-top: 24px;">
+                                    <p style="color: #64748b; font-size: 12px; margin: 0;">
+                                        Happy learning from the Khoo AI team! Need help? Just reply to this email.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+
+    email_schema = EmailSchema(
+        email=[to_email],
+        subject="Email Verified – Welcome to Khoo AI! 🎉",
+        body=html_content,
+        is_html=True,
+    )
+
+    if background_tasks is not None:
+        background_tasks.add_task(send_email, email_schema)
+        logger.info("Verification success email scheduled via FastAPI BackgroundTasks for %s", to_email)
+    else:
+        import asyncio
+        asyncio.create_task(send_email(email_schema))
+        logger.info("Verification success email scheduled via asyncio background task for %s", to_email)
