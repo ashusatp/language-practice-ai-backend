@@ -8,6 +8,7 @@ class UserResponse(BaseModel):
     name: str
     email: EmailStr
     is_active: bool
+    is_email_verified: bool = False
     created_at: datetime
     updated_at: datetime
 

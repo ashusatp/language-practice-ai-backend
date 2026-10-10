@@ -46,3 +46,22 @@ class UserRepository:
             logger.error(f"Failed to create user: {str(e)}", exc_info=True)
             await self.db.rollback()
             raise e
+
+    async def get_user_by_verification_token(self, token: str) -> User | None:
+        try:
+            query = select(User).where(User.verification_token == token)
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Failed to get user by verification token: {str(e)}", exc_info=True)
+            raise e
+
+    async def update_user(self, user: User) -> User:
+        try:
+            await self.db.commit()
+            await self.db.refresh(user)
+            return user
+        except Exception as e:
+            logger.error(f"Failed to update user: {str(e)}", exc_info=True)
+            await self.db.rollback()
+            raise e

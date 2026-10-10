@@ -9,6 +9,7 @@ from config import config
 from app.models.session import Session
 from app.models.user import User
 from app.types.livekit import LiveKitTokenRequest, LiveKitTokenResponse
+from app.types.subscription import SubscriptionStatusResponse
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,10 @@ class LiveKitTokenService:
         self,
         request: LiveKitTokenRequest,
         user: Optional[User] = None,
+        credit_status: Optional[SubscriptionStatusResponse] = None,
     ) -> LiveKitTokenResponse:
         """Generates a LiveKit JWT token adhering to LiveKit standard endpoint specification."""
+
         config.validate_livekit()
 
         # Generate or resolve room name and participant identity
@@ -73,9 +76,13 @@ class LiveKitTokenService:
             meta_dict["language"] = str(request.language)
         if user and "user_id" not in meta_dict:
             meta_dict["user_id"] = str(user.id)
+        if credit_status:
+            meta_dict["tier"] = str(credit_status.tier)
+            meta_dict["remaining_minutes"] = int(credit_status.remaining_minutes)
 
         if meta_dict:
             token.with_metadata(json.dumps(meta_dict))
+
 
         if request.participant_attributes:
             token.with_attributes(request.participant_attributes)

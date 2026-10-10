@@ -1,10 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 import json
+import math
 from config import config
 from datetime import datetime, timezone
 import logging
 import uuid
 from typing import Any, Optional
+
 
 from sqlalchemy import select
 
@@ -125,8 +127,35 @@ class SessionProcessorService:
             session.status = status
             session.ended_at = datetime.now(timezone.utc)
 
+            # Deduct practice minutes from user's subscription quota
+            if session.started_by and session.started_at:
+                diff_seconds = (session.ended_at - session.started_at).total_seconds()
+                if diff_seconds > 0:
+                    duration_mins = max(1, math.ceil(diff_seconds / 60))
+                    try:
+                        from app.repositories.subscription_repository import SubscriptionRepository
+                        from app.services.subscription_service import SubscriptionService
+
+                        sub_repo = SubscriptionRepository(db=db)
+                        sub_service = SubscriptionService(subscription_repository=sub_repo)
+                        await sub_service.deduct_session_minutes(session.started_by, duration_mins)
+                        logger.info(
+                            "Deducted %d practice minutes for user %s from session %s",
+                            duration_mins,
+                            session.started_by,
+                            session.id,
+                        )
+                    except Exception as e:
+                        logger.error(
+                            "Failed to deduct subscription minutes for user %s: %s",
+                            session.started_by,
+                            e,
+                            exc_info=True,
+                        )
+
             # Only enqueue summary generation if completed normally
             job = None
+
             if status == "completed":
                 job = Job(
                     session_id=session.id,
