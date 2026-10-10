@@ -2,7 +2,7 @@ import logging
 from config import config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.apis import auth
+from app.apis import auth, user
 
 
 # Configure centralized root logger
@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
 
     # Register API routes
     app.include_router(auth.router)
+    app.include_router(user.router)
 
     # Convenience root health check
     @app.get("/health", tags=["Health"])

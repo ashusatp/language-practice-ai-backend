@@ -1,4 +1,5 @@
 import logging
+import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,11 +23,14 @@ class UserRepository:
             logger.error(f"Failed to get user by email: {str(e)}", exc_info=True)
             raise e
 
-    async def get_user_by_id(self, user_id: str) -> User | None:
+    async def get_user_by_id(self, user_id: str | uuid.UUID) -> User | None:
         try:
-            query = select(User).where(User.id == user_id)
+            uid = uuid.UUID(str(user_id)) if isinstance(user_id, str) else user_id
+            query = select(User).where(User.id == uid)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
+        except (ValueError, TypeError):
+            return None
         except Exception as e:
             logger.error(f"Failed to get user by id: {str(e)}", exc_info=True)
             raise e
